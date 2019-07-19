@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DateTime = S7.Net.Types.DateTime;
 
 namespace S7.Net
 {
@@ -144,7 +145,16 @@ namespace S7.Net
                     }
                     else
                     {
-                        return Bit.ToBitArray(bytes);
+                        return Bit.ToBitArray(bytes, varCount);
+                    }
+                case VarType.DateTime:
+                    if (varCount == 1)
+                    {
+                        return DateTime.FromByteArray(bytes);
+                    }
+                    else
+                    {
+                        return DateTime.ToArray(bytes);
                     }
                 default:
                     return null;
@@ -162,7 +172,7 @@ namespace S7.Net
             switch (varType)
             {
                 case VarType.Bit:
-                    return varCount; //TODO
+                    return varCount + 7 / 8;
                 case VarType.Byte:
                     return (varCount < 1) ? 1 : varCount;
                 case VarType.String:
@@ -178,6 +188,8 @@ namespace S7.Net
                 case VarType.DInt:
                 case VarType.Real:
                     return varCount * 4;
+                case VarType.DateTime:
+                    return varCount * 8;
                 default:
                     return 0;
             }
