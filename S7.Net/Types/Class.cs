@@ -51,11 +51,16 @@ namespace S7.Net.Types
                     numBytes += 4;
                     break;
                 case "Single":
-                case "Double":
                     numBytes = Math.Ceiling(numBytes);
                     if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                         numBytes++;
                     numBytes += 4;
+                    break;
+                case "Double":
+                    numBytes = Math.Ceiling(numBytes);
+                    if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
+                        numBytes++;
+                    numBytes += 8;
                     break;
                 default:
                     var propertyClass = Activator.CreateInstance(type);
@@ -85,6 +90,7 @@ namespace S7.Net.Types
                         throw new Exception("Cannot determine size of class, because an array is defined which has no fixed size greater than zero.");
                     }
 
+                    IncrementToEven(ref numBytes);
                     for (int i = 0; i < array.Length; i++)
                     {
                         numBytes = GetIncreasedNumberOfBytes(numBytes, elementType);
@@ -105,9 +111,9 @@ namespace S7.Net.Types
             return numBytes;
         }
 
-        private static object GetPropertyValue(Type propertyType, byte[] bytes, ref double numBytes)
+        private static object? GetPropertyValue(Type propertyType, byte[] bytes, ref double numBytes)
         {
-            object value = null;
+            object? value = null;
 
             switch (propertyType.Name)
             {
@@ -167,12 +173,12 @@ namespace S7.Net.Types
                         bytes[(int)numBytes + 3]);
                     numBytes += 4;
                     break;
-                case "Double":
+                case "Single":
                     numBytes = Math.Ceiling(numBytes);
                     if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                         numBytes++;
                     // hier auswerten
-                    value = Double.FromByteArray(
+                    value = Real.FromByteArray(
                         new byte[] {
                             bytes[(int)numBytes],
                             bytes[(int)numBytes + 1],
@@ -180,18 +186,15 @@ namespace S7.Net.Types
                             bytes[(int)numBytes + 3] });
                     numBytes += 4;
                     break;
-                case "Single":
+                case "Double":
                     numBytes = Math.Ceiling(numBytes);
                     if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
                         numBytes++;
+                    var buffer = new byte[8];
+                    Array.Copy(bytes, (int)numBytes, buffer, 0, 8);
                     // hier auswerten
-                    value = Single.FromByteArray(
-                        new byte[] {
-                            bytes[(int)numBytes],
-                            bytes[(int)numBytes + 1],
-                            bytes[(int)numBytes + 2],
-                            bytes[(int)numBytes + 3] });
-                    numBytes += 4;
+                    value = LReal.FromByteArray(buffer);
+                    numBytes += 8;
                     break;
                 default:
                     var propClass = Activator.CreateInstance(propertyType);
@@ -219,6 +222,7 @@ namespace S7.Net.Types
                 if (property.PropertyType.IsArray)
                 {
                     Array array = (Array)property.GetValue(sourceClass, null);
+                    IncrementToEven(ref numBytes);
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
@@ -243,7 +247,7 @@ namespace S7.Net.Types
         {
             int bytePos = 0;
             int bitPos = 0;
-            byte[] bytes2 = null;
+            byte[]? bytes2 = null;
 
             switch (propertyValue.GetType().Name)
             {
@@ -275,11 +279,11 @@ namespace S7.Net.Types
                 case "UInt32":
                     bytes2 = DWord.ToByteArray((UInt32)propertyValue);
                     break;
-                case "Double":
-                    bytes2 = Double.ToByteArray((double)propertyValue);
-                    break;
                 case "Single":
-                    bytes2 = Single.ToByteArray((float)propertyValue);
+                    bytes2 = Real.ToByteArray((float)propertyValue);
+                    break;
+                case "Double":
+                    bytes2 = LReal.ToByteArray((double)propertyValue);
                     break;
                 default:
                     numBytes = ToBytes(propertyValue, bytes, numBytes);
@@ -288,10 +292,8 @@ namespace S7.Net.Types
 
             if (bytes2 != null)
             {
-                // add them
-                numBytes = Math.Ceiling(numBytes);
-                if ((numBytes / 2 - Math.Floor(numBytes / 2.0)) > 0)
-                    numBytes++;
+                IncrementToEven(ref numBytes);
+
                 bytePos = (int)numBytes;
                 for (int bCnt = 0; bCnt < bytes2.Length; bCnt++)
                     bytes[bytePos + bCnt] = bytes2[bCnt];
@@ -314,6 +316,7 @@ namespace S7.Net.Types
                 if (property.PropertyType.IsArray)
                 {
                     Array array = (Array)property.GetValue(sourceClass, null);
+                    IncrementToEven(ref numBytes);
                     Type elementType = property.PropertyType.GetElementType();
                     for (int i = 0; i < array.Length && numBytes < bytes.Length; i++)
                     {
@@ -326,6 +329,12 @@ namespace S7.Net.Types
                 }
             }
             return numBytes;
+        }
+
+        private static void IncrementToEven(ref double numBytes)
+        {
+            numBytes = Math.Ceiling(numBytes);
+            if (numBytes % 2 > 0) numBytes++;
         }
     }
 }

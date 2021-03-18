@@ -164,14 +164,24 @@
         Real,
 
         /// <summary>
-        /// String variable type (variable)
+        /// LReal variable type (64 bits, 8 bytes)
+        /// </summary>
+        LReal,
+
+        /// <summary>
+        /// Char Array / C-String variable type (variable)
         /// </summary>
         String,
 
         /// <summary>
-        /// String variable type (variable)
+        /// S7 String variable type (variable)
         /// </summary>
-        StringEx,
+        S7String,
+
+        /// <summary>
+        /// S7 WString variable type (variable)
+        /// </summary>
+        S7WString,
 
         /// <summary>
         /// Timer variable type
@@ -186,6 +196,11 @@
         /// <summary>
         /// DateTIme variable type
         /// </summary>
-        DateTime
+        DateTime,
+
+        /// <summary>
+        /// DateTimeLong variable type
+        /// </summary>
+        DateTimeLong
     }
 }
